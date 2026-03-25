@@ -19,15 +19,19 @@ public class ProxyController {
         String urlA = System.getenv("MATH_SERVICE_A_URL");
         String urlB = System.getenv("MATH_SERVICE_B_URL");
 
-        // Intentar Servicio A (Activo)
+        // Logs para ver qué está intentando el proxi
+        System.out.println("Intentando conectar con A: " + urlA);
+        System.out.println("Intentando conectar con B: " + urlB);
+
         try {
             return callHttpService(urlA + "/fibonacci?value=" + n);
         } catch (Exception e) {
-            // Si falla A, intentar B (Pasivo)
+            System.err.println("Error en A: " + e.getMessage());
             try {
                 return callHttpService(urlB + "/fibonacci?value=" + n);
             } catch (Exception ex) {
-                return "{\"error\":\"Ambos servicios caídos\"}";
+                System.err.println("Error en B: " + ex.getMessage());
+                return "{\"error\":\"Ambos servicios caídos. Detalle: " + ex.getMessage() + "\"}";
             }
         }
     }
@@ -37,6 +41,7 @@ public class ProxyController {
         HttpURLConnection con = (HttpURLConnection) obj.openConnection();
         con.setRequestMethod("GET");
         con.setRequestProperty("User-Agent", USER_AGENT);
+        con.setConnectTimeout(3000); // 3 segundos de espera
 
         int responseCode = con.getResponseCode();
         if (responseCode == HttpURLConnection.HTTP_OK) {
@@ -49,7 +54,7 @@ public class ProxyController {
             in.close();
             return response.toString();
         } else {
-            throw new IOException("Fallo en la conexión");
+            throw new IOException("HTTP Error: " + responseCode);
         }
     }
 }
